@@ -24,7 +24,7 @@ my $VALID_NAME      = qr/$VALID_LONG|$VALID_SHORT|$VALID_BARE/;
 my $SHORT_BUNDLE    = qr/-[$VALID_STARTCHAR]{2,}/;
 my $NEGATIVE        = qr/(?:--)?no-/;
 
-my @valid_keys = qw( name type required default nocase valid needs canon );
+my @valid_keys = qw( name type required default nocase valid needs canon skip_required );
 my @valid_types = qw( switch counter parameter list keypair);
 
 use vars qw( $STRICT );
@@ -96,6 +96,8 @@ sub default {
 sub anycase { my $self = shift; $self->{nocase}=1; return $self };
 
 sub needs { my $self = shift; $self->{needs}=[@_]; return $self };
+
+sub skip_required { my $self = shift; $self->{skip_required} = 1; return $self };
 
 package Getopt::Lucid;
 
@@ -187,7 +189,7 @@ sub getopt {
             unless ref($spec) eq 'ARRAY';
         $self = new($self,$spec,$target)
     }
-    my (@passthrough);
+    my (@passthrough,$skip_required);
     while (@{$self->{target}}) {
         my $raw = shift @{$self->{target}};
         last if $raw =~ /^--$/;
@@ -207,13 +209,19 @@ sub getopt {
                 /keypair/   ? _keypair  ($self, $arg, $val, $neg) :
                               throw_usage("can't handle type '$_'");
             }
+            if ( defined $self->{spec}->{$arg}->{skip_required} ){
+                $skip_required = 1;
+            }
         } else {
             throw_argv("Invalid argument: $orig")
                 if $orig =~ /^-./; # invalid if looks like it could be an arg;
             push @passthrough, $orig;
         }
     }
-    _check_required($self);
+
+    unless ( $skip_required ){
+        _check_required($self);
+    }
     _check_prereqs($self);
     _recalculate_options($self);
     @{$self->{target}} = (@passthrough, @{$self->{target}});
@@ -975,6 +983,14 @@ line or else an exception is thrown.  No argument is needed.
 
   @spec = (
     Param("input")->required(),
+  );
+
+=== skip_required()
+
+Indicates that the option ignores all requirements.
+
+  @spec = (
+    Param("help")->skip_required(),
   );
 
 === needs()

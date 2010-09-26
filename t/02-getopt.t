@@ -437,6 +437,7 @@ BEGIN {
         spec  => [
             Counter("--verbose|-v"),
             Param("--input|-i")->required,
+            Switch("--help|-h")->skip_required,
         ],
         cases => [
             {
@@ -446,13 +447,18 @@ BEGIN {
                 desc    => "missing required option"
             },
             {
+                argv    => [ qw( --help ) ],
+                result  => { "verbose" => 0, "input" => undef, "help" => 1 },
+                desc    => "check skip required"
+            },
+            {
                 argv    => [ qw( --input 42 -vv ) ],
-                result  => { "verbose" => 2, "input" => 42 },
+                result  => { "verbose" => 2, "input" => 42, "help" => 0 },
                 desc    => "required option present"
             },
             {
                 argv    => [ qw( --input info -v ) ],
-                result  => { "verbose" => 1, "input" => 'info' },
+                result  => { "verbose" => 1, "input" => 'info', "help" => 0 },
                 desc    => "required option param similar to option name"
             },
         ]
